@@ -1,18 +1,16 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 )
 
 const serverPort = 3333
 
 func main() {
 
-	requestURL := fmt.Sprintf("http://localhost:%d", serverPort)
+	requestURL := fmt.Sprintf("http://localhost:%d/shortestpath?src=", serverPort)
 	res, err := http.Get(requestURL)
 	if err != nil {
 		fmt.Printf("error making http request: %s\n", err)
