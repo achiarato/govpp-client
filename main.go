@@ -19,7 +19,7 @@ const serverPort = 3333
 
 func main() {
 
-	requestURL := fmt.Sprintf("http://localhost:%d/shortestpath?src=2001&dst=3001", serverPort)
+	requestURL := fmt.Sprintf("http://localhost:%d/shortestpath?src=2_0_0_0000.0000.0001&dst=2_0_0_0000.0000.0013", serverPort)
 	res, err := http.Get(requestURL)
 	if err != nil {
 		fmt.Printf("error making http request: %s\n", err)
