@@ -4,9 +4,22 @@ import (
 	"fmt"
 	"encoding/json"
         "io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 )
+
+type Applications struct {
+     Apps []App `json:"applications"`
+}
+
+type App struct {
+     Name string   `json:"name"`
+     Req string   `json:"requirement"`
+     Appsrc string `json:"src"`
+     Appdst string `json:"dst"`
+}
 
 type ResponseBody struct {
      Src   string
@@ -16,9 +29,86 @@ type ResponseBody struct {
 }
 
 const serverPort = 3333
+var apps Applications
+
 
 func main() {
+	fmt.Println("GoVPP Client is ready to go!")
+	time.Sleep(3*time.Second)
+	fmt.Println("GoVPP Client will start polling for inputs coming from apps!")
+	time.Sleep(3*time.Second)
+	var oldapplist []string
 
+	for {
+		time.Sleep(3*time.Second)
+		fmt.Println("...")
+		jsonAppDB, err := os.Open("app.json")
+		if err != nil {
+			fmt.Printf("Error reading the appDB json file: %s", err)
+			os.Exit(1)
+		}
+		defer jsonAppDB.Close()
+		//_, err = jsonAppDB.Seek(0,0)
+		AppDB, _ := ioutil.ReadAll(jsonAppDB)
+		json.Unmarshal(AppDB, &apps)
+
+		var newapplist []string
+		if len(apps.Apps)==0 {
+			time.Sleep(3*time.Second)
+			fmt.Println("No inputs yet, still polling!")
+			continue
+		} else {//if len(apps.Apps)!=0 {
+			for i:=0; i<len(apps.Apps); i++ {
+				newapplist = append(newapplist, apps.Apps[i].Name)
+			}
+			difference := make([]string, 0)
+			for _, v1 := range newapplist {
+				p := false
+				for _, v2 := range oldapplist {
+					if v1 == v2 {
+						p = true
+						break
+					}
+				}
+				if !p {
+					difference = append(difference, v1)
+				}
+			}
+			if len(difference) != 0 {
+				time.Sleep(1*time.Second)
+				fmt.Println("Hey! New application request is here!")
+				time.Sleep(1*time.Second)
+				fmt.Println("Processing new request!")
+				time.Sleep(2*time.Second)
+				//fmt.Printf("oldapplist: %s\n", oldapplist)
+				oldapplist = newapplist
+				//fmt.Printf("newapplist: %s\n", newapplist)
+				//fmt.Printf("difference: %s\n", difference)
+				var Todoapp Applications
+				for t:=0; t<len(apps.Apps); t++ {
+					for f:=0; f<len(difference); f++ {
+						if apps.Apps[t].Name == difference[f] {
+							Todoapp.Apps = append(Todoapp.Apps, apps.Apps[t])
+						}
+					}
+				}
+
+				for _, c := range Todoapp.Apps {
+					fmt.Println("New application's inputs to process!")
+					fmt.Printf("App Name: %s\n", c.Name)
+					fmt.Printf("App Requ: %s\n", c.Req)
+					fmt.Printf("App Src: %s\n", c.Appsrc)
+					fmt.Printf("App Dst: %s\n", c.Appdst)
+				}
+			} else {
+				time.Sleep(3*time.Second)
+				fmt.Printf("Keep polling. No new inputs to process. Inputs: %s\n", newapplist)
+				//break
+			}
+		}
+
+	}
+	os.Exit(1)
 	requestURL := fmt.Sprintf("http://localhost:%d/shortestpath?src=2_0_0_0000.0000.0001&dst=2_0_0_0000.0000.0013", serverPort)
 	res, err := http.Get(requestURL)
 	if err != nil {

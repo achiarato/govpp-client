@@ -1,0 +1,11 @@
+{
+    "applications": [
+        {
+            "name": "App1",
+            "requirement": "low latency",
+            "src": "",
+            "dst": ""
+        }
+    ]
+
+}
