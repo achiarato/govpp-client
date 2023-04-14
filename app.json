@@ -3,9 +3,16 @@
         {
             "name": "App1",
             "requirement": "low latency",
+            "src": "2_0_0_0000.0000.0001",
+            "dst": "2_0_0_0000.0000.0013"
+        },
+	{
+            "name": "App2",
+            "requirement": "low latency",
             "src": "",
             "dst": ""
         }
+
     ]
 
 }
