@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"strings"
 	"strconv"
 	"fmt"
 	"encoding/json"
@@ -104,7 +102,6 @@ func main() {
 					fmt.Printf("App Src: %s\n", c.Appsrc)
 					fmt.Printf("App Dst: %s\n", c.Appdst)
 					time.Sleep(1*time.Second)
-				
 					url := "http://localhost:" + strconv.Itoa(serverPort) + "/"
 					if c.Req == "low latency" {
 						url += "shortestpath?"
@@ -114,17 +111,6 @@ func main() {
 					}
 					url += "src=" + c.Appsrc + "&dst=" + c.Appdst
 					fmt.Printf("Sending HTTP request %s\n", url)
-
-					//inputs just to pause the automatic process
-					fmt.Println("BREAKPOINT. Press RETURN to continue the process")
-					reader := bufio.NewReader(os.Stdin)
-                			input, err := reader.ReadString('\n')
-			                if err != nil {
-                        			fmt.Println("An error occured while reading input. Please try again", err)
-                        			continue
-                			}
-                			input = strings.TrimSuffix(input, "\n")
-					//finisce input
 
 					res, err := http.Get(url)
 					if err != nil {
@@ -149,25 +135,12 @@ func main() {
 					var response ResponseBody
 					json.Unmarshal(body, &response)
 					time.Sleep(1*time.Second)
-					fmt.Printf("JSON.Unmarshal: %s\n", response)
-					time.Sleep(1*time.Second)
 					fmt.Println("Exporting data from the HTTP Response")
 					time.Sleep(1*time.Second)
 					fmt.Printf("Source Node: %s\n", response.Src)
 					fmt.Printf("Destination Node: %s\n", response.Dst)
 					fmt.Printf("USid: %s\n", response.USid)
 					fmt.Printf("Query Type: %s\n", response.Query)
-
-					//inputs just to pause the automatic process
-					fmt.Println("BREAKPOINT. Press RETURN to continue the process")
-					reader = bufio.NewReader(os.Stdin)
-                			input, err = reader.ReadString('\n')
-			                if err != nil {
-                        			fmt.Println("An error occured while reading input. Please try again", err)
-                        			continue
-                			}
-                			input = strings.TrimSuffix(input, "\n")
-					//finisce input
 
 					time.Sleep(4*time.Second)
 
@@ -180,31 +153,5 @@ func main() {
 		}
 
 	}
-	os.Exit(1)
-	requestURL := fmt.Sprintf("http://localhost:%d/shortestpath?src=2_0_0_0000.0000.0001&dst=2_0_0_0000.0000.0013", serverPort)
-	res, err := http.Get(requestURL)
-	if err != nil {
-		fmt.Printf("error making http request: %s\n", err)
-		os.Exit(1)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-	if res.StatusCode > 299 {
-		fmt.Printf("Response failed\nStatus code: %d\nBody: %s\n", res.StatusCode, body)
-		os.Exit(1)
-	}
-	if err != nil {
-		fmt.Printf("error reading body: %s", err)
-		os.Exit(1)
-	}
-	fmt.Printf("JSON Body: %s\n", body)
-	var response ResponseBody
-	json.Unmarshal(body, &response)
-	fmt.Printf("JSON.Unmarshal: %s\n", response)
-	fmt.Printf("Source Node: %s\n", response.Src)
-	fmt.Printf("Destination Node: %s\n", response.Dst)
-	fmt.Printf("USid: %s\n", response.USid)
-	fmt.Printf("Query Type: %s\n", response.Query)
 
 }
