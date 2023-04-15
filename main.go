@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"net"
 	"fmt"
 	"encoding/json"
         "io"
@@ -9,6 +10,18 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"git.fd.io/govpp.git"
+	"git.fd.io/govpp.git/api"
+
+//	interfaces "github.com/achiarato/GoVPP/vppbinapi/interface"
+//	"github.com/achiarato/GoVPP/vppbinapi/interface_types"
+	"github.com/achiarato/GoVPP/vppbinapi/ip_types"
+	sr "github.com/achiarato/GoVPP/vppbinapi/sr"
+	"github.com/achiarato/GoVPP/vppbinapi/sr_types"
+//	"github.com/achiarato/GoVPP/vppbinapi/vpe"
+
+
 )
 
 type Applications struct {
@@ -33,12 +46,153 @@ const serverPort = 3333
 var apps Applications
 
 
+func SrPolicyDump(ch api.Channel) error {
+	fmt.Println("Dumping SR Policies installed on VPP")
+	time.Sleep(1 * time.Second)
+
+	n := 0
+	reqCtx := ch.SendMultiRequest(&sr.SrPoliciesDump{})
+
+	for {
+		msg := &sr.SrPoliciesDetails{}
+		stop, err := reqCtx.ReceiveReply(msg)
+		if stop {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		n++
+		fmt.Printf(" - SR Policy #%d: \n", n)
+		fmt.Printf("    BSID:      %+v\n", msg.Bsid)
+		fmt.Printf("    IsSpray:   %+v\n", msg.IsSpray)
+		fmt.Printf("    IsEncap:   %+v\n", msg.IsEncap)
+		fmt.Printf("    Fib Table: %+v\n", msg.FibTable)
+		fmt.Printf("    SID List:  %+v\n", msg.SidLists[0].Sids)
+		//		fmt.Printf("   SID List:  %+v\n", Sids)
+	}
+	if n == 0 {
+		fmt.Println("No Srv6 Policies configured")
+	}
+	return nil
+}
+
+func ToVppIP6Address(addr net.IP) ip_types.IP6Address {
+	ip := [16]uint8{}
+	copy(ip[:], addr)
+	return ip
+}
+
+func ToVppAddress(addr net.IP) ip_types.Address {
+	a := ip_types.Address{}
+	if addr.To4() == nil {
+		a.Af = ip_types.ADDRESS_IP6
+		ip := [16]uint8{}
+		copy(ip[:], addr)
+		a.Un = ip_types.AddressUnionIP6(ip)
+	} else {
+		a.Af = ip_types.ADDRESS_IP4
+		ip := [4]uint8{}
+		copy(ip[:], addr.To4())
+		a.Un = ip_types.AddressUnionIP4(ip)
+	}
+	return a
+}
+
+func ToVppPrefix(prefix *net.IPNet) ip_types.Prefix {
+	len, _ := prefix.Mask.Size()
+	r := ip_types.Prefix{
+		Address: ToVppAddress(prefix.IP),
+		Len:     uint8(len),
+	}
+	return r
+}
+
+func SrSteeringAddDel(ch api.Channel, Bsid ip_types.IP6Address, Traffic ip_types.Prefix) error {
+	fmt.Println("Adding SR Steer policy")
+
+	var traffic_type sr_types.SrSteer
+	if Traffic.Address.Af == ip_types.ADDRESS_IP4 {
+		traffic_type = 4
+	} else {
+		traffic_type = 6
+	}
+
+	request := &sr.SrSteeringAddDel{
+		BsidAddr:    Bsid,
+		TableID:     0,
+		Prefix:      Traffic,
+		SwIfIndex:   2,
+		TrafficType: traffic_type,
+	}
+
+	response := &sr.SrSteeringAddDelReply{}
+	err := ch.SendRequest(request).ReceiveReply(response)
+	if err != nil {
+		return err
+	}
+	time.Sleep(1 * time.Second)
+	fmt.Println("SRv6 Steer Policy added!")
+	return nil
+}
+
+func SrPolicyAdd(ch api.Channel, Bsid ip_types.IP6Address, Isspray bool, Isencap bool, Fibtable int, Sids [16]ip_types.IP6Address, Sidslen int) error {
+
+	fmt.Println("Adding SRv6 Policy")
+
+	BSID := (Bsid)
+	PolicyBsid := ip_types.IP6Address{}
+	PolicyBsid = BSID
+	FwdTable := Fibtable
+	FibTable := uint32(FwdTable)
+
+	request := &sr.SrPolicyAdd{
+		BsidAddr: PolicyBsid,
+		IsSpray:  Isspray,
+		IsEncap:  Isencap,
+		FibTable: FibTable,
+		Sids: sr.Srv6SidList{
+			NumSids: uint8(Sidslen),
+			Weight:  1,
+			Sids:    Sids,
+		},
+	}
+	response := &sr.SrPolicyAddReply{}
+	err := ch.SendRequest(request).ReceiveReply(response)
+	if err != nil {
+		return err
+	}
+	time.Sleep(1 * time.Second)
+	fmt.Println("SRv6 Policy added: ", Sids)
+	return nil
+}
+
+
+
 func main() {
+	// Connect to VPP
+	conn, err := govpp.Connect("/var/run/vpp/vpp-api.sock")
+	defer conn.Disconnect()
+	if err != nil {
+		fmt.Printf("Could not connect: %s\n", err)
+		os.Exit(1)
+	}
+
+	// Open channel
+	ch, err := conn.NewAPIChannel()
+	defer ch.Close()
+	if err != nil {
+		fmt.Printf("Could not open API channel: %s\n", err)
+		os.Exit(1)
+	}
 	fmt.Println("GoVPP Client is ready to go!")
-	time.Sleep(3*time.Second)
+	time.Sleep(1*time.Second)
 	fmt.Println("GoVPP Client will start polling for inputs coming from apps!")
 	time.Sleep(3*time.Second)
 	var oldapplist []string
+	var vpp_bsid string
+	vpp_bsid = "1::"
+	app_counter := 1
 
 	for {
 		time.Sleep(3*time.Second)
@@ -141,9 +295,36 @@ func main() {
 					fmt.Printf("Destination Node: %s\n", response.Dst)
 					fmt.Printf("USid: %s\n", response.USid)
 					fmt.Printf("Query Type: %s\n", response.Query)
+					time.Sleep(2*time.Second)
+					fmt.Println("Configuring policies for VPP via GoVPP")
+					time.Sleep(1*time.Second)
+					new_bsid := vpp_bsid + strconv.Itoa(app_counter)
+					policyBSID := ToVppIP6Address(net.ParseIP(new_bsid))
+					app_counter += 1
+					segments := [16]ip_types.IP6Address{}
+					segments[0] = ToVppIP6Address(net.ParseIP(response.USid))
+					err = SrPolicyAdd(ch, policyBSID, false, true, 0, segments, 1)
+					if err != nil {
+						fmt.Printf("Could not add SR Policy: %s\n", err)
+						os.Exit(1)
+					}
+					time.Sleep(1*time.Second)
+					addr, network, err := net.ParseCIDR("10.10.1.1/24")
+					_ = addr
+					traffic := ToVppPrefix(network)
+					err = SrSteeringAddDel(ch, policyBSID, traffic)
+					if err != nil {
+						fmt.Printf("Could not add SR Steer Policy: %s\n", err)
+						os.Exit(1)
+					}
+					time.Sleep(1*time.Second)
+					err = SrPolicyDump(ch)
+					if err != nil {
+						fmt.Printf("Could not dump SR Policies: %s\n", err)
+						os.Exit(1)
+					}
 
 					time.Sleep(4*time.Second)
-
 				}
 			} else {
 				time.Sleep(3*time.Second)
