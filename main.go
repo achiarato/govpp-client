@@ -14,13 +14,9 @@ import (
 	"git.fd.io/govpp.git"
 	"git.fd.io/govpp.git/api"
 
-//	interfaces "github.com/achiarato/GoVPP/vppbinapi/interface"
-//	"github.com/achiarato/GoVPP/vppbinapi/interface_types"
 	"github.com/achiarato/GoVPP/vppbinapi/ip_types"
 	sr "github.com/achiarato/GoVPP/vppbinapi/sr"
 	"github.com/achiarato/GoVPP/vppbinapi/sr_types"
-//	"github.com/achiarato/GoVPP/vppbinapi/vpe"
-
 
 )
 
@@ -47,8 +43,8 @@ var apps Applications
 
 
 func SrPolicyDump(ch api.Channel) error {
-	fmt.Println("Dumping SR Policies installed on VPP")
-	time.Sleep(1 * time.Second)
+	fmt.Println("Dumping SR Policies...")
+	time.Sleep(2 * time.Second)
 
 	n := 0
 	reqCtx := ch.SendMultiRequest(&sr.SrPoliciesDump{})
@@ -109,7 +105,7 @@ func ToVppPrefix(prefix *net.IPNet) ip_types.Prefix {
 }
 
 func SrSteeringAddDel(ch api.Channel, Bsid ip_types.IP6Address, Traffic ip_types.Prefix) error {
-	fmt.Println("Adding SR Steer policy")
+	fmt.Println("Adding SR Steer policy...")
 
 	var traffic_type sr_types.SrSteer
 	if Traffic.Address.Af == ip_types.ADDRESS_IP4 {
@@ -131,14 +127,14 @@ func SrSteeringAddDel(ch api.Channel, Bsid ip_types.IP6Address, Traffic ip_types
 	if err != nil {
 		return err
 	}
-	time.Sleep(1 * time.Second)
-	fmt.Println("SRv6 Steer Policy added!")
+	time.Sleep(3 * time.Second)
+	fmt.Println("SR Steer Policy added!")
 	return nil
 }
 
 func SrPolicyAdd(ch api.Channel, Bsid ip_types.IP6Address, Isspray bool, Isencap bool, Fibtable int, Sids [16]ip_types.IP6Address, Sidslen int) error {
 
-	fmt.Println("Adding SRv6 Policy")
+	fmt.Println("Adding SRv6 Policy...")
 
 	BSID := (Bsid)
 	PolicyBsid := ip_types.IP6Address{}
@@ -162,7 +158,7 @@ func SrPolicyAdd(ch api.Channel, Bsid ip_types.IP6Address, Isspray bool, Isencap
 	if err != nil {
 		return err
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	fmt.Println("SRv6 Policy added: ", Sids)
 	return nil
 }
@@ -232,13 +228,8 @@ func main() {
 			if len(difference) != 0 {
 				time.Sleep(1*time.Second)
 				fmt.Println("Hey! New application request is here!")
-				time.Sleep(1*time.Second)
-				fmt.Println("Processing new request!")
 				time.Sleep(2*time.Second)
-				//fmt.Printf("oldapplist: %s\n", oldapplist)
 				oldapplist = newapplist
-				//fmt.Printf("newapplist: %s\n", newapplist)
-				//fmt.Printf("difference: %s\n", difference)
 				var Todoapp Applications
 				for t:=0; t<len(apps.Apps); t++ {
 					for f:=0; f<len(difference); f++ {
@@ -249,13 +240,14 @@ func main() {
 				}
 
 				for _, c := range Todoapp.Apps {
-					fmt.Printf("Starting the processing for %s\n", c.Name)
-					time.Sleep(1*time.Second)
-					fmt.Printf("App Name: %s\n", c.Name)
-					fmt.Printf("App Requ: %s\n", c.Req)
-					fmt.Printf("App Src: %s\n", c.Appsrc)
-					fmt.Printf("App Dst: %s\n", c.Appdst)
-					time.Sleep(1*time.Second)
+					fmt.Printf("Inputs coming from new app: %s. Starting the processing...\n", c.Name)
+					time.Sleep(3*time.Second)
+					fmt.Printf("Application's inputs:\n")
+					fmt.Printf("Name: %s - Requirement: %s - Source Node: %s - Destination Node: %s\n", c.Name, c.Req, c.Appsrc, c.Appdst)
+					time.Sleep(3*time.Second)
+					fmt.Printf("\n")
+					fmt.Println("Preparing the HTTP request to query the SR-App...")
+					time.Sleep(4*time.Second)
 					url := "http://localhost:" + strconv.Itoa(serverPort) + "/"
 					if c.Req == "low latency" {
 						url += "shortestpath?"
@@ -264,7 +256,9 @@ func main() {
 						os.Exit(1)
 					}
 					url += "src=" + c.Appsrc + "&dst=" + c.Appdst
-					fmt.Printf("Sending HTTP request %s\n", url)
+					fmt.Printf("HTTP request is ready: %s\n", url)
+					time.Sleep(2*time.Second)
+					fmt.Println("Sending HTTP request to the SR-App!")
 
 					res, err := http.Get(url)
 					if err != nil {
@@ -282,22 +276,22 @@ func main() {
 						fmt.Printf("error reading body: %s", err)
 						os.Exit(1)
 					}
-					time.Sleep(1*time.Second)
-					fmt.Println("HTTP Response received!")
-					time.Sleep(1*time.Second)
-					fmt.Printf("JSON Body: %s\n", body)
+					time.Sleep(2*time.Second)
+					fmt.Println("...")
+					time.Sleep(2*time.Second)
+					fmt.Println("HTTP response received!")
+					time.Sleep(3*time.Second)
+					fmt.Printf("HTTP response's JSON Body: %s\n", body)
 					var response ResponseBody
 					json.Unmarshal(body, &response)
-					time.Sleep(1*time.Second)
-					fmt.Println("Exporting data from the HTTP Response")
-					time.Sleep(1*time.Second)
-					fmt.Printf("Source Node: %s\n", response.Src)
-					fmt.Printf("Destination Node: %s\n", response.Dst)
-					fmt.Printf("USid: %s\n", response.USid)
-					fmt.Printf("Query Type: %s\n", response.Query)
+					time.Sleep(4*time.Second)
+					fmt.Println("Exporting data from the HTTP Response...")
 					time.Sleep(2*time.Second)
-					fmt.Println("Configuring policies for VPP via GoVPP")
-					time.Sleep(1*time.Second)
+					fmt.Printf("USid received via HTTP response: %s for the %s query\n", response.USid, response.Query)
+					time.Sleep(4*time.Second)
+					fmt.Printf("\n")
+					fmt.Println("Using data to configure SR policies for VPP via GoVPP...")
+					time.Sleep(3*time.Second)
 					new_bsid := vpp_bsid + strconv.Itoa(app_counter)
 					policyBSID := ToVppIP6Address(net.ParseIP(new_bsid))
 					app_counter += 1
@@ -308,7 +302,8 @@ func main() {
 						fmt.Printf("Could not add SR Policy: %s\n", err)
 						os.Exit(1)
 					}
-					time.Sleep(1*time.Second)
+					time.Sleep(4*time.Second)
+					fmt.Printf("\n")
 					addr, network, err := net.ParseCIDR("10.10.1.1/24")
 					_ = addr
 					traffic := ToVppPrefix(network)
@@ -317,14 +312,21 @@ func main() {
 						fmt.Printf("Could not add SR Steer Policy: %s\n", err)
 						os.Exit(1)
 					}
-					time.Sleep(1*time.Second)
+					time.Sleep(4*time.Second)
+					fmt.Printf("\n")
+					fmt.Println("Querying VPP to get list of configured policies to double check...")
+					time.Sleep(2*time.Second)
 					err = SrPolicyDump(ch)
 					if err != nil {
 						fmt.Printf("Could not dump SR Policies: %s\n", err)
 						os.Exit(1)
 					}
-
 					time.Sleep(4*time.Second)
+					fmt.Printf("\n")
+					fmt.Printf("Great! VPP config for %s worked!\n", c.Name)
+					time.Sleep(1*time.Second)
+					fmt.Println("Moving on...")
+					time.Sleep(3*time.Second)
 				}
 			} else {
 				time.Sleep(3*time.Second)
