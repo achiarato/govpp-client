@@ -32,6 +32,8 @@ The JSON file will provide the Application Name, the Application Requirement (lo
 
 GO Client will wait until Applications provide inputs (JSON file filled). Once GO client will find inputs, it will prepare the HTTP Request based on Application requirements.
 
+![image](https://user-images.githubusercontent.com/125906326/232443000-b95e903a-97e7-47b0-a514-e65c930ef7d8.png)
+
 ```
 GoVPP Client is ready to go!
 GoVPP Client will start polling for inputs coming from apps!
@@ -51,6 +53,8 @@ HTTP request is ready: http://localhost:3333/shortestpath?src=2_0_0_0000.0000.00
 In the demo, the low latency input will be translated in the SHORTEST PATH requirement between Source and Destination node. (The SRv6 Policy Engine is locally installed in the demo but it could be remote)
 The SRv6 Policy Engine will process the HTTP GET Request providing a SRv6 uSID in the HTTP Response's Body (for more information regarding SRv6 Policy Engine see above):
 
+![image](https://user-images.githubusercontent.com/125906326/232443450-8e1f3f98-1e6e-41ea-8c5d-a9e12794b109.png)
+
 ```
 Sending HTTP request to the SR-App!
 ...
@@ -61,6 +65,8 @@ Exporting data from the HTTP Response...
 uSid received via HTTP response: fc00::1:1:2:11:13 for the Shortest Path query
 ```
 The received uSID will be used to create new SRv6 policy programmed on VPP via GoVPP. 
+
+![image](https://user-images.githubusercontent.com/125906326/232443724-fe64417e-a6e7-4476-a5b7-d1a6ecbdab41.png)
 
 ```
 Using data to configure SR policies for VPP via GoVPP...
