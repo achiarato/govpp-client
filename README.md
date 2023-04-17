@@ -1,11 +1,11 @@
 # govpp-client: GO Client for the end-host networking use case
 
-End-Host VM interacting with Applications getting inputs to query a remote HTTP Server working as SRv6 SIDs Policy engine. 
-GoVPP will use the received SRv6 SIDs to programme an SRv6 policy via VPP's APIs.
+End-Host VM interacting with Applications getting inputs to query a remote HTTP Server working as SRv6 SIDs/uSID Policy Engine. 
+GoVPP will use the received SRv6 SIDs/uSID to programme a new SRv6 policy on VPP via VPP's APIs.
 
-For more information about End-Host Networking:
+For more information about End-Host Networking: 
 
-Repository with GO code for the SRv6 SIDs Policy Engine:
+Repository with GO code for the SRv6 SIDs Policy Engine: https://github.com/achiarato/sr-app
 
 DEMO: 
 
