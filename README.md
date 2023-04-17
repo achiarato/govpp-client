@@ -1,6 +1,6 @@
-# govpp-client
+# govpp-client: 
 
-GO Client for the end-host networking use case
+###GO Client for the end-host networking use case
 
 End-Host VM interacting with Applications getting inputs to query a remote HTTP Server working as SRv6 SIDs Policy engine. 
 GoVPP will use the received SRv6 SIDs to programme an SRv6 policy via VPP's APIs.
@@ -27,9 +27,7 @@ Interaction with Applications is simulated by GO Client polling a JSON file as f
             "src": "2_0_0_0000.0000.0001",
             "dst": "2_0_0_0000.0000.0013"
         }
-
     ]
-
 }
 ```
 The JSON file will provide the Application Name, the Application Requirement (low latency, bandwidth guaranteed, ...), the source IP/Node and the destination IP/Node.
