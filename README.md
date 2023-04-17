@@ -7,8 +7,6 @@ For more information about End-Host Networking:
 
 Repository with GO code for the SRv6 SIDs Policy Engine: https://github.com/achiarato/sr-app
 
-DEMO: 
-
 Interaction with Applications is simulated by GO Client polling a JSON file as following:
 ```
 {
